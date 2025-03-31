@@ -1,0 +1,189 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Toxicity Analysis</title>
+    {% load static %}
+    <link rel="stylesheet" href="{% static 'css/style.css' %}">
+    <style>
+        /* Стиль для анимации загрузки */
+        .loading-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(50, 50, 50, 0.9); /* Темно-серый фон */
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            z-index: 1000;
+            visibility: hidden;
+            opacity: 0;
+            transition: visibility 0s, opacity 0.3s linear;
+        }
+        .loading-overlay.active {
+            visibility: visible;
+            opacity: 1;
+        }
+        .spinner {
+            border: 8px solid #f3f3f3; /* Светлый фон */
+            border-top: 8px solid #3498db; /* Цвет спиннера */
+            border-radius: 50%;
+            width: 60px;
+            height: 60px;
+            animation: spin 1s linear infinite;
+        }
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
+        /* Стиль для полей ввода */
+        .input-field {
+            width: 100%; /* Занимает всю доступную ширину */
+            max-width: 400px; /* Фиксированная максимальная ширина */
+            padding: 10px; /* Внутренний отступ */
+            margin-bottom: 15px; /* Отступ снизу */
+            box-sizing: border-box; /* Учитываем padding в ширину */
+            font-size: 16px; /* Размер шрифта */
+            border: 1px solid #ccc; /* Граница */
+            border-radius: 5px; /* Скругленные углы */
+        }
+
+        /* Стиль для текстовой области */
+        textarea.input-field {
+            resize: none; /* Запрещаем изменение размера */
+            height: 100px; /* Фиксированная высота */
+        }
+
+        /* Стиль для кнопки отправки оценок */
+        #submit-ratings {
+            display: none; /* По умолчанию скрыта */
+            margin: 20px auto; /* Размещение по центру */
+            padding: 10px 20px;
+            background-color: #3498db;
+            color: white;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+        }
+    </style>
+</head>
+<body>
+    <!-- Форма для анализа текста -->
+    <form id="analysis-form" method="post" action="">
+        {% csrf_token %}
+        <div class="form-group">
+            <input type="email" id="email" name="email" class="input-field" placeholder="Enter your email (unrequired field)">
+        </div>
+        <div class="form-group">
+            <input type="text" id="text" name="text" class="input-field" placeholder="Enter text (required field)" required>
+        </div>
+        <button type="submit">Analyse</button>
+    </form>
+
+    <!-- Анимация загрузки -->
+    <div id="loading-overlay" class="loading-overlay">
+        <div class="spinner"></div>
+    </div>
+
+    <!-- Результаты анализа -->
+    <div id="results">
+        <!-- Вердикт модели -->
+        {% if model_verdict %}
+            <div style="margin-bottom: 20px;">
+                <strong>Model Verdict:</strong> {{ model_verdict }}
+            </div>
+        {% endif %}
+
+        <!-- Объяснения и шкалы оценок -->
+        {% if lime_explanation_image %}
+            <h3>LIME Explanation</h3>
+            <img src="data:image/png;base64,{{ lime_explanation_image }}" alt="LIME Explanation">
+            <div class="rating-container" style="display: none;">
+                <label for="lime_rating">Evaluate LIME's explanation:</label>
+                <input type="range" id="lime_rating" name="lime_rating" class="rating-slider" min="1" max="5" value="3" required>
+                <span class="rating-value" id="lime_rating_value">3</span>
+            </div>
+        {% endif %}
+        {% if shap_explanation_image %}
+            <h3>SHAP Explanation</h3>
+            <img src="data:image/png;base64,{{ shap_explanation_image }}" alt="SHAP Explanation">
+            <div class="rating-container" style="display: none;">
+                <label for="shap_rating">Evaluate SHAP's explanation:</label>
+                <input type="range" id="shap_rating" name="shap_rating" class="rating-slider" min="1" max="5" value="3" required>
+                <span class="rating-value" id="shap_rating_value">3</span>
+            </div>
+        {% endif %}
+        {% if deeplift_explanation_image %}
+            <h3>DeepLift Explanation</h3>
+            <img src="data:image/png;base64,{{ deeplift_explanation_image }}" alt="DeepLift Explanation">
+            <div class="rating-container" style="display: none;">
+                <label for="deeplift_rating">Appreciate DeepLift's explanation:</label>
+                <input type="range" id="deeplift_rating" name="deeplift_rating" class="rating-slider" min="1" max="5" value="3" required>
+                <span class="rating-value" id="deeplift_rating_value">3</span>
+            </div>
+        {% endif %}
+        {% if integrated_gradients_explanation_image %}
+            <h3>Integrated Gradients Explanation</h3>
+            <img src="data:image/png;base64,{{ integrated_gradients_explanation_image }}" alt="Integrated Gradients Explanation">
+            <div class="rating-container" style="display: none;">
+                <label for="integrated_gradients_rating">Evaluate the explanation of Integrated Gradients:</label>
+                <input type="range" id="integrated_gradients_rating" name="integrated_gradients_rating" class="rating-slider" min="1" max="5" value="3" required>
+                <span class="rating-value" id="integrated_gradients_rating_value">3</span>
+            </div>
+        {% endif %}
+
+        <!-- Форма для отправки оценок -->
+        <form id="ratings-form" method="post" action="">
+            {% csrf_token %}
+            <input type="hidden" name="email" value="{{ email }}"> <!-- Добавляем email -->
+            <input type="hidden" name="text" value="{{ text }}"> <!-- Добавляем текст -->
+            <input type="hidden" name="lime_rating" id="lime_rating_hidden" value="3">
+            <input type="hidden" name="shap_rating" id="shap_rating_hidden" value="3">
+            <input type="hidden" name="deeplift_rating" id="deeplift_rating_hidden" value="3">
+            <input type="hidden" name="integrated_gradients_rating" id="integrated_gradients_rating_hidden" value="3">
+            <button type="submit" id="submit-ratings" style="display: none;">Send evaluations</button>
+        </form>
+    </div>
+
+    <script>
+        // Проверка наличия email после загрузки страницы
+        document.addEventListener('DOMContentLoaded', function () {
+            const email = "{{ email }}".trim(); // Удаляем лишние пробелы
+            if (email) {
+                // Показываем шкалы оценок
+                document.querySelectorAll('.rating-container').forEach(container => {
+                    container.style.display = 'block';
+                });
+                // Показываем кнопку отправки оценок
+                document.getElementById('submit-ratings').style.display = 'block';
+            }
+        });
+
+        // Показывать анимацию загрузки при отправке формы
+        document.getElementById('analysis-form').addEventListener('submit', function () {
+            const loadingOverlay = document.getElementById('loading-overlay');
+            loadingOverlay.classList.add('active'); // Показываем оверлей
+        });
+
+        // Скрывать анимацию загрузки после завершения анализа
+        window.addEventListener('load', function () {
+            const loadingOverlay = document.getElementById('loading-overlay');
+            loadingOverlay.classList.remove('active'); // Скрываем оверлей
+        });
+
+        // Обновление значений ползунков
+        document.querySelectorAll('.rating-slider').forEach(slider => {
+            const hiddenInput = document.getElementById(`${slider.id}_hidden`);
+            const valueDisplay = slider.nextElementSibling;
+            slider.addEventListener('input', function () {
+                valueDisplay.textContent = this.value; // Обновляем отображаемое значение
+                hiddenInput.value = this.value; // Обновляем значение скрытого поля
+            });
+        });
+    </script>
+</body>
+</html>

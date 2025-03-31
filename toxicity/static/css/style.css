@@ -1,0 +1,54 @@
+/* Тёмный фон и белый текст */
+body {
+    background-color: #4e4d4d;
+    color: #ffffff;
+    font-family: Arial, sans-serif;
+    text-align: center;
+    padding: 20px;
+}
+
+/* Стили для кнопок */
+button {
+    background-color: #1e88e5;
+    color: white;
+    border: none;
+    padding: 10px 20px;
+    font-size: 16px;
+    cursor: pointer;
+    border-radius: 5px;
+    margin-top: 10px;
+}
+
+button:hover {
+    background-color: #1565c0;
+}
+
+/* Поле ввода */
+input, textarea {
+    background-color: #333;
+    color: white;
+    border: 1px solid #555;
+    padding: 10px;
+    width: 100%;
+    border-radius: 5px;
+    margin-top: 10px;
+}
+
+/*.input-field {*/
+/*    width: 100%; !* Растягивает элементы по всей ширине *!*/
+/*    max-width: 400px; !* Максимальная ширина *!*/
+/*    padding: 10px;*/
+/*    margin-bottom: 15px;*/
+/*    box-sizing: border-box;*/
+/*    font-size: 16px;*/
+/*    border: 1px solid #ccc;*/
+/*    border-radius: 5px;*/
+/*}*/
+
+/*!* Добавляем отступы и выравнивание *!*/
+/*.form-group {*/
+/*    display: flex;*/
+/*    justify-content: center; !* Выравнивание по центру *!*/
+/*    align-items: center;*/
+/*    margin: 10px 0;*/
+/*}*/
